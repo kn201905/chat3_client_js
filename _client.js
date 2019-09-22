@@ -3,14 +3,16 @@
 // send 用バッファ
 const g_ary_buf_send = new ArrayBuffer(1500);
 
+
+const EN_SEC_Wait_Init_RI = 5;
+
 const EN_UP_Init_RI = 1;
 const EN_DN_Init_RI = EN_UP_Init_RI + 1;
-
 
 const EN_CMD_MASK = 0xff;
 const EN_BUSY_WAIT_SEC = 0x100;
 
-const EN_SEC_Wait_Init_RI = 5;
+const EN_DN_Init_RI__WARN_multi_cnct = 0xffff;
 
 
 // ------------------------------------------------
@@ -48,7 +50,21 @@ function DN_Init_RI(rcv_ary) {
 				g_ws.send(ary);
 			}
 		);
+		return;
 	}
+
+	// DN_Init_RI のデータ取得
+	let idx = 1;
+
+	let num_rm_read = rcv_ary[idx++];
+	if (num_rm_read == EN_DN_Init_RI__WARN_multi_cnct)
+	{
+		// 多重接続の警告を受け取った場合の措置
+	}
+
+	const num_rm_all = rcv_ary[idx++];
+
+	g_dlg_bx.Show_Txt('情報を取得した部屋数: ' + num_rm_read + ' / 今、存在している部屋数: ' + num_rm_all, true);
 }
 
 // ------------------------------------------------
