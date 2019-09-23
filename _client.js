@@ -32,40 +32,63 @@ g_ws.onmessage = (ev) => {
 	switch(rcv_ary[0] & EN_CMD_MASK)
 	{
 		case  EN_DN_Init_RI:
-			DN_Init_RI(rcv_ary);
+			g_DN_Init_RI.Decode(rcv_ary);
 			break;
 			
 	}
 };
 
-function DN_Init_RI(rcv_ary) {
-	// 遅延リクエストのチェック
-	if (rcv_ary[0] & EN_BUSY_WAIT_SEC)
-	{
-		g_modal_dlg_timeout.Show(EN_SEC_Wait_Init_RI
-			, '現在サーバーが大変混み合っています。' + EN_SEC_Wait_Init_RI + '秒間お待ち下さい。'
-			, () => {
-				// Init_RI の実行中は、g_ary_buf_send の内容は一定となっている
-				const ary = new Uint16Array(g_ary_buf_send, 0, 1);
-				g_ws.send(ary);
-			}
-		);
-		return;
-	}
+const g_DN_Init_RI = new function() {
+	let m_rcv_ary;
+	let m_idx;
 
-	// DN_Init_RI のデータ取得
-	let idx = 1;
+	// rcv_ary は Uint16Array
+	this.Decode = (rcv_ary) => {
+		m_rcv_ary = rcv_ary;
 
-	let num_rm_read = rcv_ary[idx++];
-	if (num_rm_read == EN_DN_Init_RI__WARN_multi_cnct)
-	{
-		// 多重接続の警告を受け取った場合の措置
-	}
+		// 遅延リクエストのチェック
+		if (rcv_ary[0] & EN_BUSY_WAIT_SEC)
+		{
+			g_modal_dlg_timeout.Show(EN_SEC_Wait_Init_RI
+				, '現在サーバーが大変混み合っています。' + EN_SEC_Wait_Init_RI + '秒間お待ち下さい。'
+				, () => {
+					// Init_RI の実行中は、g_ary_buf_send の内容は一定となっている
+					const ary = new Uint16Array(g_ary_buf_send, 0, 1);
+					g_ws.send(ary);
+				}
+			);
+			return;
+		}
 
-	const num_rm_all = rcv_ary[idx++];
+		// DN_Init_RI のヘッダチェック
+		let num_rm_read = rcv_ary[1];
+		if (num_rm_read == EN_DN_Init_RI__WARN_multi_cnct)
+		{
+			// 多重接続の警告を受け取った場合の措置
+			ShowDLG_multi_cnnct_on_InitRI(rcv_ary[2], rcv_ary[3], rcv_ary[4]);
+			// Decode_Body() の前準備として、m_idx を設定しておく
+			m_idx = 5;
+		}
+		else
+		{
+			m_idx = 1;
+			this.Decode_Body();
+		}
+	};
 
-	g_dlg_bx.Show_Txt('情報を取得した部屋数: ' + num_rm_read + ' / 今、存在している部屋数: ' + num_rm_all, true);
+	// ShowDLG_multi_cnnct_on_InitRI() からもコールされるため、プロパティにしている
+	this.Decode_Body = () => {
+		const num_rm_read = m_rcv_ary[m_idx++];
+		const num_rm_all = m_rcv_ary[m_idx++];
+
+		g_dlg_bx.ApndTxt_MultiLine([
+			'チャットサーバーへの接続に成功しました！'
+			, '情報を取得した部屋数: ' + num_rm_read + ' / 今、存在している部屋数: ' + num_rm_all
+		]);
+		g_dlg_bx.Show(true);
+	};
 }
+
 
 // ------------------------------------------------
 
@@ -335,7 +358,7 @@ function Create_FlexStg(parent) {
 ////////////////////////////////////////////////////////////////
 
 // モーダルダイアログボックス
-const g_dlg_bx = new function() {
+function Modal_DlgBx() {
 	const m_e_dlg_frm = document.createElement('div');
 	m_e_dlg_frm.classList.add('frm');
 	m_e_dlg_frm.style.position = 'fixed';
@@ -401,9 +424,25 @@ const g_dlg_bx = new function() {
 		m_e_div_cnts.appendChild(e_div);
 		return e_div;
 	};
+	this.ApndTxt_onNewDiv = (msg) => {
+		const e_div = document.createElement('div');
+		e_div.textContent = msg;
+		m_e_div_cnts.appendChild(e_div);
+		return e_div;
+	};
+	// 引数は、['***', '***', ...] の形式
+	this.ApndTxt_MultiLine = (ary) => {
+		for (let msg of ary) {
+			const e_div = document.createElement('div');
+			e_div.textContent = msg;
+			m_e_div_cnts.appendChild(e_div);
+		}
+	};
 
 	this.Enbl_1st_Btn = () => { m_e_btn_1st.disabled = false; };
 	this.Dsbl_1st_Btn = () => { m_e_btn_1st.disabled = true; };
+	this.SetTxt_1st_Btn = (txt) => { m_e_btn_1st.textContent = txt; };
+	this.SetFn_1st_Btn = (fn) => { m_e_btn_1st.onclick = fn; };
 
 	this.Enbl_Close_outFrm = () => { m_modal_scrn.Rgst_CB_onclick(Close); };
 
@@ -437,6 +476,10 @@ const g_dlg_bx = new function() {
 		m_e_btn_2nd.hidden = false;
 	};
 };
+
+const g_dlg_bx = new Modal_DlgBx();
+const g_dlg_bx_2 = new Modal_DlgBx();
+
 
 function Modal_Scrn() {
 	const m_e_scrn_mask = document.createElement('div');
