@@ -38,6 +38,7 @@ g_ws.onmessage = (ev) => {
 	}
 };
 
+// ShowDLG_multi_cnnct_on_InitRI() からもコールされるため、オブジェクトにしてメモリを確保しておく
 const g_DN_Init_RI = new function() {
 	let m_rcv_ary;
 	let m_idx;
@@ -86,6 +87,10 @@ const g_DN_Init_RI = new function() {
 			, '情報を取得した部屋数: ' + num_rm_read + ' / 今、存在している部屋数: ' + num_rm_all
 		]);
 		g_dlg_bx.Show(true);
+
+		
+///===未実装===///
+// ここから Init_RI の RI をデコードしていくこと
 	};
 }
 
@@ -357,7 +362,7 @@ function Create_FlexStg(parent) {
 
 ////////////////////////////////////////////////////////////////
 
-// モーダルダイアログボックス
+// モーダルダイアログボックス（自分専用のスクリーンマスクを持つ）
 function Modal_DlgBx() {
 	const m_e_dlg_frm = document.createElement('div');
 	m_e_dlg_frm.classList.add('frm');
@@ -502,8 +507,10 @@ function Modal_Scrn() {
 	this.Rgst_CB_onclick = (fn_CB) => { m_e_scrn_mask.onclick = fn_CB; };
 };
 
+const g_scrn_mask_shared = new Modal_Scrn();
 
-// タイムアウトを待つモーダルダイアログ
+
+// タイムアウトを待つモーダルダイアログ（スクリーンマスクは共用のものを利用）
 const g_modal_dlg_timeout = new function() {
 	const m_e_dlg_frm = document.createElement('div');
 	m_e_dlg_frm.classList.add('frm');
@@ -512,8 +519,6 @@ const g_modal_dlg_timeout = new function() {
 	m_e_dlg_frm.style.top = '2em';
 	m_e_dlg_frm.hidden = true;
 	document.body.appendChild(m_e_dlg_frm);
-
-	const m_modal_scrn = new Modal_Scrn();
 
 	const m_e_div_cnts = document.createElement('div');
 	m_e_dlg_frm.appendChild(m_e_div_cnts);
@@ -531,7 +536,7 @@ const g_modal_dlg_timeout = new function() {
 		m_e_div_sec_cntr.textContent = '残り秒数: ' + sec;
 
 		m_e_dlg_frm.style.zIndex = z_idx;
-		m_modal_scrn.Show(null, z_idx - 1, 0.3);
+		g_scrn_mask_shared.Show(null, z_idx - 1, 0.3);
 		m_e_dlg_frm.hidden = false;
 
 		m_cntr_sec = sec;
@@ -552,7 +557,7 @@ const g_modal_dlg_timeout = new function() {
 		if (m_e_dlg_frm.hidden) { return; }
 
 		m_e_dlg_frm.hidden = true;
-		m_modal_scrn.Hide();
+		g_scrn_mask_shared.Hide();
 
 		m_e_div_cnts.textContent = '';  // 全ての子要素も削除される
 	}

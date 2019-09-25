@@ -1,7 +1,6 @@
 'use strict';
 
 function ShowDLG_multi_cnnct_on_InitRI(times_cnct, past_time_1st_cnct, pass_phrs) {
-	const m_pass_phrs = pass_phrs;
 
 	g_dlg_bx.ApndTxt_MultiLine([
 		'今、利用されている IP から、短時間で複数回の接続が検出されました。'

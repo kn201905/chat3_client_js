@@ -6,10 +6,13 @@ const Doj_Rating = function() {
 	m_e_raiting.textContent = '▼ 0';
 	m_e_raiting.onclick = () => {
 		if (g_doj_body_setting.IsVisible()) {
-			g_doj_modal_scrn.Hide();
+			g_scrn_mask_shared.Hide();
 			g_doj_body_setting.Hide();
 		} else {
-			g_doj_modal_scrn.Show(m_e_raiting.onclick.bind(this), 99);
+			g_scrn_mask_shared.Show( () => {
+				g_scrn_mask_shared.Hide();
+				g_doj_body_setting.Hide();
+			}, 99, .3);
 			g_doj_body_setting.Show();
 		}
 	};
@@ -68,17 +71,25 @@ const Doj_Body_Setting = function() {
 	m_e_set_LH.appendChild(m_e_slider_LH);
 	m_e_lump.appendChild(m_e_set_LH);
 
-	const m_e_btn_crt_room = document.createElement('button');
+	// ボタンを作る
+	const m_e_stg_btns = Create_FlexStg(m_e_lump);
+	m_e_stg_btns.style.justifyContent = 'space-between';
+
+	const m_e_btn_crt_room = Create_Btn(m_e_stg_btns, '自分の部屋を作る');
 	m_e_btn_crt_room.classList.add('btn_crt_room');
-	m_e_btn_crt_room.textContent = '自分の部屋を作る';
 	m_e_btn_crt_room.onclick = () => {
-		g_doj_modal_scrn.Hide();
+		g_scrn_mask_shared.Hide();
 		g_doj_body_setting.Hide();
 
 		g_doj_set_room_prof.Show();
-	}
-	m_e_lump.appendChild(m_e_btn_crt_room);
+	};
 
+	const m_e_btn_close = Create_Btn(m_e_stg_btns, '閉じる');
+	m_e_btn_close.classList.add('btn_crt_room');
+	m_e_btn_close.onclick = () => {
+		g_scrn_mask_shared.Hide();
+		g_doj_body_setting.Hide();
+	};
 
 	/////////////////////////////////////////////////////////
 	this.Show = () => {

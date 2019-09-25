@@ -1,0 +1,9 @@
+z-index メモ
+
+  5  rating
+
+100  body setting
+
+900　InitRI 多重接続警告
+910　InitRI 多重接続警告　成功
+910　InitRI 多重接続警告　失敗

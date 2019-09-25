@@ -15,8 +15,9 @@ const ga_mng_doj_RI = new function() {
 	// doj_room_info が返される
 	this.Search_byRmID = (rmID) => {
 		const idx = ma_RmID.indexOf(rmID);
+		// 通信量制限のために、すべての部屋の情報があるとは限らない
 		if (idx < 0) {
-			alert('該当 rmID なし : ga_mng_doj_RI.Search_byRmID()');
+//			alert('該当 rmID なし : ga_mng_doj_RI.Search_byRmID()');
 			return null;
 		}
 
@@ -26,7 +27,7 @@ const ga_mng_doj_RI = new function() {
 	this.Remove_byRmID = (rmID) => {
 		const idx = ma_RmID.indexOf(rmID);
 		if (idx < 0) {
-			alert('該当 rmID なし : ga_mng_doj_RI.Remove_byRmID()');
+//			alert('該当 rmID なし : ga_mng_doj_RI.Remove_byRmID()');
 			return;
 		}
 
@@ -70,13 +71,13 @@ let g_my_uID = -1;
 let g_my_uname = null;
 // uview は、今後仕様が変更されれる可能性が高いため、doj_crt_usr で管理する
 
-//const g_doj_color = new Doj_Color();
-//const g_doj_rating = new Doj_Rating();
-//const g_doj_body_setting = new Doj_Body_Setting();
+const g_doj_color = new Doj_Color();
+const g_doj_rating = new Doj_Rating();
+const g_doj_body_setting = new Doj_Body_Setting();
 
-//const g_doj_crt_usr = new Doj_CreateUser();
-//const g_doj_char_pick = new Doj_Char_Pick();
-//g_doj_crt_usr.Apnd_CharPick(g_doj_char_pick);
+const g_doj_crt_usr = new Doj_CreateUser();
+const g_doj_char_pick = new Doj_Char_Pick();
+g_doj_crt_usr.Apnd_CharPick(g_doj_char_pick);
 
 //const g_Room_Voices = new Doj_Room_Voices();
 //const g_doj_fixd_msg = new Doj_Fmsg();
@@ -114,7 +115,7 @@ g_doj_set_room_prof.Apnd_TopicSlctr(g_doj_topic_slctr);
 */
 
 // ---------------------------------------------
-//g_doj_body.Append(g_doj_crt_usr);
+g_doj_body.Append(g_doj_crt_usr);
 //g_doj_body.Append(g_doj_set_room_prof);
 //g_doj_body.Append(g_doj_color);
 
@@ -126,8 +127,8 @@ g_doj_body.Append(g_doj_dbgcnsl);
 //g_doj_body.Append(g_doj_fixd_msg);
 //g_doj_body.Append(g_doj_room_etc);
 
-//g_doj_body.Append(g_doj_rating);
-//g_doj_body.Append(g_doj_body_setting);
+g_doj_body.Append(g_doj_rating);
+g_doj_body.Append(g_doj_body_setting);
 
 //g_doj_body.Append(g_doj_modal_scrn);
 

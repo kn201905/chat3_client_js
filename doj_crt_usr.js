@@ -151,6 +151,7 @@ const Doj_CreateUser = function() {
 //	this.Get_uID = () => m_uID;  // deprecated
 
 	// m_uname は内部処理用にのみに利用することに変更した
+	// クラス外では g_my_uname を利用することに変更
 	let m_uname = null;
 //	this.Get_uname = () => m_uname;  // deprecated
 
@@ -220,9 +221,9 @@ const Doj_CreateUser = function() {
 
 
 	// サイトディスクリプション
-	const m_e_description = Create_e_str_div(a_str_crt_usr);
-	m_e_description.classList.add('site_description');
-	m_e_frm.appendChild(m_e_description);
+//	const m_e_description = Create_e_str_div(a_str_crt_usr);
+//	m_e_description.classList.add('site_description');
+//	m_e_frm.appendChild(m_e_description);
 
 	// -------------------------------------
 	function OnKeyUp_uname() {
@@ -287,7 +288,7 @@ const Doj_CreateUser = function() {
 
 g_DBG_F('UP_new_usr');
 
-		g_socketio.emit('UP_new_usr', [m_e_ipt_supass.value, m_uname, m_uview]);
+//		g_socketio.emit('UP_new_usr', [m_e_ipt_supass.value, m_uname, m_uview]);
 	}
 	
 	this.Rcv_DN_Crtd_Usr = (new_uID) => {
@@ -301,7 +302,7 @@ g_DBG_F('UP_new_usr');
 	}
 }
 
-
+/*
 // 接続状態の IPで、c_msec_uID_exprd 以内に uID を作ろうとした場合
 const c_ERR_crt_usr_notDscnct = -1;
 // 切断はしているが、c_msec_uID_exprd 以内に、異なる uname, uview で uID を作ろうとした場合
@@ -335,4 +336,4 @@ g_socketio.on('DN_crtd_usr', (new_uID) => {
 	g_dlg_bx.Show();
 	g_doj_crt_usr.Show();
 });
-
+*/
