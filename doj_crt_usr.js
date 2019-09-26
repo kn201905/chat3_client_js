@@ -1,9 +1,9 @@
 'use strict';
 
-const str_ver = 'ver 0.6.3';
+const str_ver = 'ver 0.0.1';
 
 // js の仮数部は、52bits
-// uview： ユーザ設定  反映中設定   id
+// uview： ユーザ指定  画面上の色　 id
 //　　　　　fff        fff         ff (<-32bits)
 // 一応、上位 16bit は、予約領域としておく
 
@@ -31,8 +31,6 @@ const Doj_Char_Pick = function() {
 		const e_img = new Image(g_stt.icoSz_Rm, g_stt.icoSz_Rm);
 		e_img.src = './_images/' + ma_img_fname[idx][0] + '.png';
 		ma_e_img_raw[idx] = e_img.cloneNode(false);  // ma_e_img_raw は img 要素となる
-
-		const str_bg_cl = ma_img_fname[idx][1];;
 
 		// アイコン画像の生成
 		const e_ico_div = document.createElement('div');
@@ -78,7 +76,7 @@ const Doj_Char_Pick = function() {
 
 
 	/////////////////////////////////////////////////////////
-	this.Resize = (font_px) => {
+	this.Resize = () => {
 		const new_icoSz_Rm = g_stt.icoSz_Rm;
 
 		if (g_doj_room.IsOpen()) {
@@ -146,15 +144,12 @@ const Doj_Char_Pick = function() {
 
 
 const Doj_CreateUser = function() {
-	// m_uID は将来的に削除する
-//	let m_uID = -1;  // 'DN_crtd_usr' にて、サーバーから割り当てられる
-//	this.Get_uID = () => m_uID;  // deprecated
 
 	// m_uname は内部処理用にのみに利用することに変更した
-	// クラス外では g_my_uname を利用することに変更
+	// クラス外では g_my_uname を利用することに変更。g_my_uname は、DN_Crt_Usr で設定される
 	let m_uname = null;
-//	this.Get_uname = () => m_uname;  // deprecated
 
+	// uview は、今後、仕様変更の可能性が高いため、内部変数で保持しておく
 	let m_uview = 0;
 	this.Get_uview = () => m_uview;
 	// この Set_uview は、自分の uview を変更するという意味
@@ -225,10 +220,13 @@ const Doj_CreateUser = function() {
 //	m_e_description.classList.add('site_description');
 //	m_e_frm.appendChild(m_e_description);
 
+///===TEMP===///
+	const m_e_description = Create_TxtDiv(m_e_frm, 'サイトディスクリプション');
+
 	// -------------------------------------
 	function OnKeyUp_uname() {
 		const len = m_e_input.value.trim().length;
-		if (len == 0 || len > 10) {
+		if (len == 0 || len > EN_MAX_LEN_uname) {
 			m_e_btn.disabled = true;
 		} else {
 			m_e_btn.disabled = false;
@@ -279,26 +277,60 @@ const Doj_CreateUser = function() {
 	};
 
 	// -------------------------------------
+	let m_ui16Ary_OnCrtUsr;
 	function CreateUser() {
 		m_uname = m_e_input.value.trim();
-		const len = m_uname.length;
-		if (len === 0 || len > 10) { return; }
+		const len_uname = m_uname.length;
+		if (len_uname === 0 || len_uname > EN_MAX_LEN_uname) { return; }
 
 		Hide();
 
 g_DBG_F('UP_new_usr');
 
+		// コマンド：1 + コンテナサイズ：1（エラー検出用）+
+		//	+ reserved：2（4bytes） + uview：2 (4bytes) + 名前：len_uname
+		const sz_cntnr = 1 + 1 + 2 + 2 + len_uname;
+		m_ui16Ary_OnCrtUsr = new Uint16Array(g_ary_buf_send, 0, sz_cntnr);
+
+		m_ui16Ary_OnCrtUsr[0] = EN_UP_Crt_Usr;
+		m_ui16Ary_OnCrtUsr[1] = sz_cntnr;  // エラー検出用
+		// reserved 32 bits（将来、パスワードとして利用）
+		m_ui16Ary_OnCrtUsr[2] = 0;
+		m_ui16Ary_OnCrtUsr[3] = 0;
+		// uview 32 bits（リトルエンディアン）
+		m_ui16Ary_OnCrtUsr[4] = m_uview & 0xffff;
+		m_ui16Ary_OnCrtUsr[5] = (m_uview >>> 16) & 0xffff;
+
+		for (let idx_src = 0; idx_src < len_uname; ++idx_src)
+		{ m_ui16Ary_OnCrtUsr[idx_src + 6] = m_uname.charCodeAt(idx_src); }
+
+		g_ws.send(m_ui16Ary_OnCrtUsr);
+
 //		g_socketio.emit('UP_new_usr', [m_e_ipt_supass.value, m_uname, m_uview]);
 	}
 	
-	this.Rcv_DN_Crtd_Usr = (new_uID) => {
-//		m_uID = new_uID;
+	// 鯖からの返信をデコードする
+	this.DN_Crt_Usr = (rcv_ui16Ary) => {
 
-		g_my_uID = new_uID;
+		// 遅延リクエストのチェック（まず、ないはず）
+		if (rcv_ui16Ary[0] & EN_BUSY_WAIT_SEC)
+		{
+			g_modal_dlg_timeout.Show(EN_SEC_Wait_Crt_Usr
+				, '現在ユーザ数が上限に達しています。' + EN_SEC_Wait_Crt_Usr + '秒間お待ち下さい。'
+				, () => {
+					// CreateUser の実行中は、m_ui16Ary_OnCrtUsr の内容は一定となっているはず
+					g_ws.send(m_ui16Ary_OnCrtUsr);
+				}
+			);
+			return;
+		}
+
+		// m_uID の取り出し（uint32_t がリトルエンディアンで設定されている）
+		g_my_uID = rcv_ui16Ary[1] + (rcv_ui16Ary[2] << 16);
 		g_my_uname = m_uname;
 
 		// トピックバインダが複数個になったときには注意
-		g_doj_topic_bindr.Enabled();
+//		g_doj_topic_bindr.Enabled();
 	}
 }
 

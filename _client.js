@@ -4,10 +4,16 @@
 const g_ary_buf_send = new ArrayBuffer(1500);
 
 
+const EN_MAX_LEN_uname = 10;
 const EN_SEC_Wait_Init_RI = 5;
+const EN_SEC_Wait_Crt_Usr = 60;
 
+// 連番 ------
 const EN_UP_Init_RI = 1;
 const EN_DN_Init_RI = EN_UP_Init_RI + 1;
+const EN_UP_Crt_Usr = EN_DN_Init_RI + 1;
+const EN_DN_Crt_Usr = EN_UP_Crt_Usr + 1;
+// -----------
 
 const EN_CMD_MASK = 0xff;
 const EN_BUSY_WAIT_SEC = 0x100;
@@ -28,27 +34,30 @@ g_ws.onopen = () => {
 };
 
 g_ws.onmessage = (ev) => {
-	const rcv_ary = new Uint16Array(ev.data);
-	switch(rcv_ary[0] & EN_CMD_MASK)
+	const rcv_ui16Ary = new Uint16Array(ev.data);
+	switch(rcv_ui16Ary[0] & EN_CMD_MASK)
 	{
 		case  EN_DN_Init_RI:
-			g_DN_Init_RI.Decode(rcv_ary);
+			g_DN_Init_RI.Decode(rcv_ui16Ary);
 			break;
-			
+		
+		case  EN_DN_Crt_Usr:
+			g_doj_crt_usr.DN_Crt_Usr(rcv_ui16Ary);
+			break;
 	}
 };
 
 // ShowDLG_multi_cnnct_on_InitRI() からもコールされるため、オブジェクトにしてメモリを確保しておく
 const g_DN_Init_RI = new function() {
-	let m_rcv_ary;
+	let m_rcv_ui16Ary;
 	let m_idx;
 
-	// rcv_ary は Uint16Array
-	this.Decode = (rcv_ary) => {
-		m_rcv_ary = rcv_ary;
+	// rcv_ui16Ary は Uint16Array
+	this.Decode = (rcv_ui16Ary) => {
+		m_rcv_ui16Ary = rcv_ui16Ary;
 
 		// 遅延リクエストのチェック
-		if (rcv_ary[0] & EN_BUSY_WAIT_SEC)
+		if (rcv_ui16Ary[0] & EN_BUSY_WAIT_SEC)
 		{
 			g_modal_dlg_timeout.Show(EN_SEC_Wait_Init_RI
 				, '現在サーバーが大変混み合っています。' + EN_SEC_Wait_Init_RI + '秒間お待ち下さい。'
@@ -62,11 +71,11 @@ const g_DN_Init_RI = new function() {
 		}
 
 		// DN_Init_RI のヘッダチェック
-		let num_rm_read = rcv_ary[1];
+		let num_rm_read = rcv_ui16Ary[1];
 		if (num_rm_read == EN_DN_Init_RI__WARN_multi_cnct)
 		{
 			// 多重接続の警告を受け取った場合の措置
-			ShowDLG_multi_cnnct_on_InitRI(rcv_ary[2], rcv_ary[3], rcv_ary[4]);
+			ShowDLG_multi_cnnct_on_InitRI(rcv_ui16Ary[2], rcv_ui16Ary[3], rcv_ui16Ary[4]);
 			// Decode_Body() の前準備として、m_idx を設定しておく
 			m_idx = 5;
 		}
@@ -79,8 +88,8 @@ const g_DN_Init_RI = new function() {
 
 	// ShowDLG_multi_cnnct_on_InitRI() からもコールされるため、プロパティにしている
 	this.Decode_Body = () => {
-		const num_rm_read = m_rcv_ary[m_idx++];
-		const num_rm_all = m_rcv_ary[m_idx++];
+		const num_rm_read = m_rcv_ui16Ary[m_idx++];
+		const num_rm_all = m_rcv_ui16Ary[m_idx++];
 
 		g_dlg_bx.ApndTxt_MultiLine([
 			'チャットサーバーへの接続に成功しました！'
